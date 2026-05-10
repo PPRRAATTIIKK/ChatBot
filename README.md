@@ -1,200 +1,196 @@
-<div align="center">
+# 🏥 Medical Assistant Chatbot
 
-# 🛡️ Cyber Bullying Prediction
+> An NLP-powered chatbot for healthcare navigation — built with LSTM neural networks and TensorFlow/Keras.
 
-**Detecting cyberbullying in social media posts using NLP & Machine Learning**
-
-[![Python](https://img.shields.io/badge/Python-3.8%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![scikit-learn](https://img.shields.io/badge/scikit--learn-ML-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
-[![NLTK](https://img.shields.io/badge/NLTK-NLP-154360?style=for-the-badge)](https://www.nltk.org/)
-[![Jupyter](https://img.shields.io/badge/Jupyter-Notebook-F37626?style=for-the-badge&logo=jupyter&logoColor=white)](https://jupyter.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge)](LICENSE)
-
-<img src="https://img.shields.io/badge/Dataset-13%2C147%20Posts-6366f1?style=flat-square" />
-<img src="https://img.shields.io/badge/Best%20Accuracy-95.08%25-22c55e?style=flat-square" />
-<img src="https://img.shields.io/badge/Models-4%20Classifiers-f59e0b?style=flat-square" />
-
-</div>
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
+[![TensorFlow](https://img.shields.io/badge/TensorFlow-2.x-FF6F00?style=flat-square&logo=tensorflow&logoColor=white)](https://tensorflow.org)
+[![Keras](https://img.shields.io/badge/Keras-LSTM-D00000?style=flat-square&logo=keras&logoColor=white)](https://keras.io)
+[![Jupyter](https://img.shields.io/badge/Notebook-Jupyter-F37626?style=flat-square&logo=jupyter&logoColor=white)](https://jupyter.org)
+[![License](https://img.shields.io/badge/License-MIT-22c55e?style=flat-square)](LICENSE)
 
 ---
 
 ## 📌 Overview
 
-Cyberbullying is a growing problem on social media platforms. This project builds an end-to-end **NLP pipeline** to automatically detect cyberbullying in Formspring Q&A posts — from raw messy text to trained classifiers with evaluation metrics and visualisations.
-
-The pipeline covers:
-- 🧹 **Text preprocessing** — HTML stripping, stopword removal, Snowball stemming
-- 📊 **Feature extraction** — TF-IDF vectorisation (unigrams + bigrams)
-- 🤖 **Model training** — 4 classifiers with GridSearchCV hyperparameter tuning
-- 📈 **Evaluation** — Accuracy, Precision, Recall, F1, Confusion Matrices
-
----
-
-## 📂 Project Structure
+The **Medical Assistant Chatbot** is an intent-based conversational AI that helps users navigate key healthcare modules — from adverse drug reaction queries to hospital and pharmacy lookups. It uses a lightweight LSTM model trained on a custom `intents.json` dataset, with multi-turn context handling for complex interactions.
 
 ```
-Cyber-Bullying-Prediction/
-│
-├── 📓 cyber_bullying.ipynb     # Main notebook — full pipeline
-├── 📄 Formspring.csv           # Dataset (place here before running)
-└── 📋 README.md
+User: "Find me a pharmacy nearby"
+Bot:  "Please provide pharmacy name"
+User: "Apollo"
+Bot:  "Loading pharmacy details..."
 ```
 
 ---
 
-## 🗂️ Dataset
-
-**Formspring.csv** — 13,147 Q&A posts scraped from the Formspring social platform.
+## ✨ Features
 
 | Feature | Description |
 |---|---|
-| `text` | Raw Q&A post text |
-| `answer` | Label — `Yes` (bullying) / `No` (not bullying) |
-
-> ⚠️ **Class Imbalance:** ~93.5% of posts are labelled *Not Bullying* and ~6.5% *Bullying*. This inflates accuracy scores and suppresses recall — addressed in the Results section.
+| 🧠 **LSTM Intent Classification** | Sequence model with token embeddings for robust intent prediction |
+| 🔄 **Multi-turn Context** | Remembers conversation state for pharmacy, hospital, and BP search flows |
+| 💊 **Adverse Drug Reactions** | Query and navigate drug safety information |
+| 🩺 **Blood Pressure Tracking** | Log and search patient BP records by ID |
+| 🏨 **Hospital Lookup** | Search hospitals by name, location, and type |
+| 💊 **Pharmacy Search** | Find pharmacies by name |
+| 🛑 **Out-of-scope Fallback** | Confidence thresholding returns a safe "noanswer" response |
+| 📊 **Training Visualizations** | Accuracy/loss curves and intent distribution charts |
 
 ---
 
-## ⚙️ Pipeline
+## 🏗️ Model Architecture
 
 ```
-Raw Text
-   │
-   ▼
-┌─────────────────────────────┐
-│   TEXT PREPROCESSING        │
-│  • Lowercase                │
-│  • Remove HTML / URLs       │
-│  • Remove punctuation       │
-│  • Remove stopwords (NLTK)  │
-│  • Snowball Stemming        │
-└─────────────┬───────────────┘
-              │
-              ▼
-┌─────────────────────────────┐
-│   TF-IDF VECTORISATION      │
-│  • Unigrams + Bigrams       │
-│  • Top 10,000 features      │
-└─────────────┬───────────────┘
-              │
-              ▼
-┌─────────────────────────────┐
-│   LABEL ENCODING            │
-│  No → 0   |   Yes → 1      │
-└─────────────┬───────────────┘
-              │
-              ▼
-┌─────────────────────────────┐
-│   TRAIN / TEST SPLIT        │
-│  70% train  |  30% test     │
-│  stratify=True              │
-└─────────────┬───────────────┘
-              │
-              ▼
-┌─────────────────────────────┐
-│   MODEL TRAINING            │
-│  SVM · NaiveBayes           │
-│  DecisionTree · LogReg      │
-│  + GridSearchCV tuning      │
-└─────────────┬───────────────┘
-              │
-              ▼
-     EVALUATION & PLOTS
+Input (padded token sequence)
+        │
+  Embedding Layer
+  (vocab_size+1 → 10 dims)
+        │
+  LSTM (10 units, return_sequences=True)
+        │
+    Flatten
+        │
+  Dense + Softmax
+  (13 output intent classes)
+```
+
+**Training config:**
+- Optimizer: `Adam`
+- Loss: `Sparse Categorical Crossentropy`
+- Early stopping: `patience=10` on accuracy
+- Max epochs: `200`, batch size: `8`
+
+---
+
+## 🎯 Supported Intents
+
+```
+greeting              · goodbye              · thanks
+options               · noanswer (fallback)
+adverse_drug          · blood_pressure       · blood_pressure_search
+search_blood_pressure_by_patient_id
+pharmacy_search       · search_pharmacy_by_name
+hospital_search       · search_hospital_by_params · search_hospital_by_type
 ```
 
 ---
 
-## 🤖 Models & Results
+## 📁 Project Structure
 
-| Model | Accuracy | Precision | Recall | F1-Score |
-|---|:---:|:---:|:---:|:---:|
-| 🥇 **SVM (Sigmoid kernel)** | **95.08%** | **80.52%** | 25.73% | 38.97% |
-| 🥈 **Multinomial Naive Bayes** | 94.02% | 53.62% | 15.35% | 23.74% |
-| 🥉 **Decision Tree** | 93.11% | 41.88% | **33.20%** | 37.03% |
-| **Logistic Regression** | 94.35% | 90.24% | 14.45% | 24.92% |
-
-> 💡 **Why is recall low?** The dataset is heavily imbalanced — 93.5% of samples are "Not Bullying". All models learn to predict the majority class. Improving recall requires techniques like **SMOTE oversampling**, `class_weight='balanced'`, or **transformer-based models** (BERT).
-
----
-
-## 🛠️ Tech Stack
-
-| Library | Purpose |
-|---|---|
-| `pandas` `numpy` | Data loading & manipulation |
-| `NLTK` | Stopword removal, Snowball stemming |
-| `scikit-learn` | TF-IDF, classifiers, GridSearchCV, metrics |
-| `matplotlib` | Visualisations & plots |
-| `Jupyter Notebook` | Interactive development |
+```
+medical-chatbot/
+│
+├── medical_chatbot.ipynb       # Main notebook (train + inference + chat loop)
+├── intents.json                # Intent patterns, responses & context definitions
+│
+├── medical_chatbot_model.h5    # Saved Keras model (generated after training)
+├── tokenizer.pkl               # Fitted tokenizer (generated after training)
+├── label_encoder.pkl           # Label encoder (generated after training)
+│
+├── training_curves.png         # Accuracy & loss plots (generated)
+└── intent_distribution.png     # Pattern count per intent (generated)
+```
 
 ---
 
 ## 🚀 Getting Started
 
-### 1. Clone the repo
+### Prerequisites
+
 ```bash
-git clone https://github.com/your-username/Cyber-Bullying-Prediction.git
-cd Cyber-Bullying-Prediction
+pip install tensorflow numpy pandas scikit-learn matplotlib
 ```
 
-### 2. Install dependencies
+### Run Locally
+
 ```bash
-pip install pandas numpy nltk scikit-learn matplotlib jupyter
+# Clone the repository
+git clone https://github.com/your-username/medical-chatbot.git
+cd medical-chatbot
+
+# Launch the notebook
+jupyter notebook medical_chatbot.ipynb
 ```
 
-### 3. Download NLTK data
+### Run on Google Colab
+
+1. Upload `medical_chatbot.ipynb` and `intents.json` to Colab.
+2. Uncomment the file upload cell at the top of Section 2.
+3. Run all cells (`Runtime → Run all`).
+
+---
+
+## 💬 Usage
+
+After training, the chatbot exposes three simple functions:
+
 ```python
-import nltk
-nltk.download('stopwords')
+# Predict the intent of any message
+tag = predict_intent("Find me a pharmacy nearby")
+# → "pharmacy_search"
+
+# Get a random response for an intent
+response = get_response("pharmacy_search")
+# → "Please provide pharmacy name"
+
+# Full pipeline in one call
+reply = chat("I want to log blood pressure results")
+# → "[Intent: blood_pressure]  Navigating to Blood Pressure module"
 ```
 
-### 4. Add the dataset
-Place `Formspring.csv` in the project root directory.
-
-### 5. Run the notebook
-```bash
-jupyter notebook cyber_bullying.ipynb
-```
-
-> 🌐 **Running on Google Colab?** Upload `Formspring.csv` using:
-> ```python
-> from google.colab import files
-> uploaded = files.upload()
-> ```
+**Interactive loop** — run Section 13 in the notebook for a live terminal chat session. Type `quit` to exit.
 
 ---
 
-## 📊 Visualisations
+## 🔧 Extending the Bot
 
-The notebook generates the following plots:
+Adding new capabilities is straightforward — no architecture changes needed:
 
-- 📉 **Class distribution** — bar + pie chart of label imbalance
-- 📊 **Metric comparison** — grouped bar chart (Accuracy / Precision / Recall / F1) across all models
-- 🟦 **Confusion matrices** — 2×2 heatmaps for each classifier
-- 🏆 **F1-score ranking** — horizontal bar chart showing best model
-
----
-
-## 🔮 Future Improvements
-
-- [ ] Handle class imbalance with **SMOTE** or `class_weight='balanced'`
-- [ ] Add **word embeddings** — Word2Vec, GloVe, or FastText
-- [ ] Fine-tune a **BERT / DistilBERT** transformer model
-- [ ] Build a **Streamlit web app** for live cyberbullying detection
-- [ ] Add **cross-validation** for more robust evaluation
+1. Open `intents.json`
+2. Add a new intent block:
+   ```json
+   {
+     "tag": "appointment_booking",
+     "patterns": ["Book an appointment", "Schedule a visit", "I need to see a doctor"],
+     "responses": ["Navigating to appointment booking module"],
+     "context": [""]
+   }
+   ```
+3. Re-run the notebook from **Section 2** onwards.
 
 ---
 
-## 📜 License
+## 📊 Training Results
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+The model trains in under a minute on CPU and typically converges to **>95% accuracy** on the training set within 100 epochs, with early stopping preventing overfitting.
+
+Charts generated automatically during training:
+- `training_curves.png` — accuracy and loss over epochs
+- `intent_distribution.png` — pattern count per intent tag
 
 ---
 
-<div align="center">
+## 🛠️ Tech Stack
 
-Made with ❤️ for safer online spaces
+- **Python 3.11**
+- **TensorFlow / Keras** — LSTM model building & training
+- **NumPy / Pandas** — data manipulation
+- **scikit-learn** — label encoding
+- **Matplotlib** — training visualizations
+- **Jupyter Notebook** — interactive development environment
 
-⭐ Star this repo if you found it useful!
+---
 
-</div>
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
+
+---
+
+## 🙌 Contributing
+
+Pull requests are welcome! For major changes, please open an issue first to discuss what you'd like to change. Make sure to update `intents.json` and re-run training if you modify intent definitions.
+
+---
+
+<p align="center">Made with ❤️ for healthcare accessibility</p>
