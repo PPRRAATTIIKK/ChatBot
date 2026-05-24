@@ -19,13 +19,13 @@ responses = {}
 
 try:
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.join(base_dir, 'app/model.h5')
-    model = load_model(model_path, compile=False)
+    model = load_model(os.path.join(base_dir, 'app/model.h5'), compile=False)
     tokenizer = joblib.load(os.path.join(base_dir, 'app/tokenizer.joblib'))
     le = joblib.load(os.path.join(base_dir, 'app/label_encoder.joblib'))
     
     with open(os.path.join(base_dir, 'app/responses.json'), 'r') as f:
         responses = json.load(f)
+        
     print("✅ Model loaded successfully!")
 except Exception as e:
     print("❌ Model loading failed:", str(e))
@@ -45,7 +45,7 @@ def home():
 @app.route("/chat", methods=["POST"])
 def chat():
     if not model:
-        return jsonify({"response": "Model is not loaded properly. Please contact support."})
+        return jsonify({"response": "Model is not loaded. Please try again later."})
 
     try:
         data = request.get_json()
@@ -56,7 +56,7 @@ def chat():
 
         cleaned = clean_text(user_input)
         sequence = tokenizer.texts_to_sequences([cleaned])
-        padded = pad_sequences(sequence, maxlen=20)
+        padded = pad_sequences(sequence, maxlen=20)   # Change this if your model was trained with different length
 
         prediction = model.predict(padded, verbose=0)
         tag_index = np.argmax(prediction)
@@ -72,7 +72,7 @@ def chat():
         })
 
     except Exception as e:
-        return jsonify({"response": "Sorry, I had an error. Please try again."})
+        return jsonify({"response": "Sorry, I had an error processing your request."})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
