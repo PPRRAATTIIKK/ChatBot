@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import joblib
 import json
@@ -9,9 +9,10 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 import re
 import os
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
 
+# Load model
 model = None
 tokenizer = None
 le = None
@@ -25,7 +26,6 @@ try:
     
     with open(os.path.join(base_dir, 'app/responses.json'), 'r') as f:
         responses = json.load(f)
-        
     print("✅ Model loaded successfully!")
 except Exception as e:
     print("❌ Model loading failed:", str(e))
@@ -35,17 +35,14 @@ def clean_text(text):
     text = re.sub(r'[^a-zA-Z\s]', '', text)
     return text
 
-@app.route("/")
-def home():
-    return jsonify({
-        "status": "Medical Chatbot API is running",
-        "model_loaded": model is not None
-    })
+@app.route('/')
+def serve_frontend():
+    return send_from_directory('.', 'index.html')
 
 @app.route("/chat", methods=["POST"])
 def chat():
     if not model:
-        return jsonify({"response": "Model is not loaded. Please try again later."})
+        return jsonify({"response": "Model is not loaded properly."})
 
     try:
         data = request.get_json()
@@ -56,7 +53,7 @@ def chat():
 
         cleaned = clean_text(user_input)
         sequence = tokenizer.texts_to_sequences([cleaned])
-        padded = pad_sequences(sequence, maxlen=20)   # Change this if your model was trained with different length
+        padded = pad_sequences(sequence, maxlen=20)
 
         prediction = model.predict(padded, verbose=0)
         tag_index = np.argmax(prediction)
