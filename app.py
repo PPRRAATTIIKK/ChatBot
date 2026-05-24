@@ -19,14 +19,13 @@ responses = {}
 
 try:
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    
-    model = load_model(os.path.join(base_dir, 'app/model.h5'), compile=False)
+    model_path = os.path.join(base_dir, 'app/model.h5')
+    model = load_model(model_path, compile=False)
     tokenizer = joblib.load(os.path.join(base_dir, 'app/tokenizer.joblib'))
     le = joblib.load(os.path.join(base_dir, 'app/label_encoder.joblib'))
     
     with open(os.path.join(base_dir, 'app/responses.json'), 'r') as f:
         responses = json.load(f)
-        
     print("✅ Model loaded successfully!")
 except Exception as e:
     print("❌ Model loading failed:", str(e))
@@ -46,8 +45,8 @@ def home():
 @app.route("/chat", methods=["POST"])
 def chat():
     if not model:
-        return jsonify({"response": "Model is not loaded. Please contact admin."})
-    
+        return jsonify({"response": "Model is not loaded properly. Please contact support."})
+
     try:
         data = request.get_json()
         user_input = data.get("message", "").strip()
@@ -63,7 +62,7 @@ def chat():
         tag_index = np.argmax(prediction)
         tag = le.inverse_transform([tag_index])[0]
 
-        response_list = responses.get(tag, ["I'm sorry, I don't understand."])
+        response_list = responses.get(tag, ["I'm sorry, I don't understand your query."])
         response = response_list[0] if isinstance(response_list, list) else str(response_list)
 
         return jsonify({
@@ -73,7 +72,7 @@ def chat():
         })
 
     except Exception as e:
-        return jsonify({"response": "Sorry, I had an error processing your request."})
+        return jsonify({"response": "Sorry, I had an error. Please try again."})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
