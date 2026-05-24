@@ -2,39 +2,43 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import joblib
 import json
-import numpy as np
-import tensorflow as tf
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing.sequence import pad_sequences
-import re
 import os
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
 
+print("Current Directory:", os.getcwd())
+print("Files in root:", os.listdir('.'))
+if os.path.exists('app'):
+    print("Files in app folder:", os.listdir('app'))
+else:
+    print("ERROR: 'app' folder not found!")
+
 model = None
 tokenizer = None
 le = None
 responses = {}
-load_error = "No error"
+load_error = "No error yet"
 
 try:
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    model = load_model(os.path.join(base_dir, 'app/model.h5'), compile=False)
+    print("Base directory:", base_dir)
+    
+    model_path = os.path.join(base_dir, 'app/model.h5')
+    print("Looking for model at:", model_path)
+    print("Model file exists:", os.path.exists(model_path))
+    
+    model = load_model(model_path, compile=False)
     tokenizer = joblib.load(os.path.join(base_dir, 'app/tokenizer.joblib'))
     le = joblib.load(os.path.join(base_dir, 'app/label_encoder.joblib'))
     
     with open(os.path.join(base_dir, 'app/responses.json'), 'r') as f:
         responses = json.load(f)
-    print("✅ Model loaded successfully!")
+        
+    print("✅ SUCCESS: Model loaded!")
 except Exception as e:
     load_error = str(e)
-    print("❌ Model loading failed:", load_error)
-
-def clean_text(text):
-    text = text.lower()
-    text = re.sub(r'[^a-zA-Z\s]', '', text)
-    return text
+    print("❌ FAILED to load model:", load_error)
 
 @app.route('/')
 def serve_frontend():
@@ -43,34 +47,14 @@ def serve_frontend():
 @app.route("/chat", methods=["POST"])
 def chat():
     if not model:
-        return jsonify({"response": "Model is not loaded properly. Please contact support."})
-
-    try:
-        data = request.get_json()
-        user_input = data.get("message", "").strip()
-
-        if not user_input:
-            return jsonify({"response": "Please describe your symptoms."})
-
-        cleaned = clean_text(user_input)
-        sequence = tokenizer.texts_to_sequences([cleaned])
-        padded = pad_sequences(sequence, maxlen=20)
-
-        prediction = model.predict(padded, verbose=0)
-        tag_index = np.argmax(prediction)
-        tag = le.inverse_transform([tag_index])[0]
-
-        response_list = responses.get(tag, ["I'm sorry, I don't understand your symptoms. Please describe them more clearly."])
-        response = response_list[0] if isinstance(response_list, list) else str(response_list)
-
         return jsonify({
-            "response": response,
-            "tag": tag,
-            "confidence": float(prediction[0][tag_index])
+            "response": "Model is not loaded properly.",
+            "debug": load_error
         })
 
-    except Exception as e:
-        return jsonify({"response": "Sorry, I had an error. Please try again later."})
+    # ... rest of your chat function (we'll add later)
+
+    return jsonify({"response": "Model is working but chat logic not yet connected."})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
