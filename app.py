@@ -12,19 +12,24 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-# Load model with legacy compatibility
+model = None
+tokenizer = None
+le = None
+responses = {}
+
 try:
-    model = load_model('app/model.h5', compile=False)
-    tokenizer = joblib.load('app/tokenizer.joblib')
-    le = joblib.load('app/label_encoder.joblib')
+    base_dir = os.path.dirname(os.path.abspath(__file__))
     
-    with open('app/responses.json', 'r') as f:
+    model = load_model(os.path.join(base_dir, 'app/model.h5'), compile=False)
+    tokenizer = joblib.load(os.path.join(base_dir, 'app/tokenizer.joblib'))
+    le = joblib.load(os.path.join(base_dir, 'app/label_encoder.joblib'))
+    
+    with open(os.path.join(base_dir, 'app/responses.json'), 'r') as f:
         responses = json.load(f)
         
-    print("✅ Model loaded successfully")
+    print("✅ Model loaded successfully!")
 except Exception as e:
     print("❌ Model loading failed:", str(e))
-    model = None
 
 def clean_text(text):
     text = text.lower()
@@ -41,25 +46,25 @@ def home():
 @app.route("/chat", methods=["POST"])
 def chat():
     if not model:
-        return jsonify({"response": "Sorry, the model is not loaded properly."})
+        return jsonify({"response": "Model is not loaded. Please contact admin."})
     
     try:
         data = request.get_json()
         user_input = data.get("message", "").strip()
 
         if not user_input:
-            return jsonify({"response": "Please type something!"})
+            return jsonify({"response": "Please type a message!"})
 
         cleaned = clean_text(user_input)
         sequence = tokenizer.texts_to_sequences([cleaned])
-        padded = pad_sequences(sequence, maxlen=20)   # Change this number if your model was trained with different maxlen
+        padded = pad_sequences(sequence, maxlen=20)
 
         prediction = model.predict(padded, verbose=0)
         tag_index = np.argmax(prediction)
         tag = le.inverse_transform([tag_index])[0]
 
-        response_list = responses.get(tag, ["I'm sorry, I don't understand your query."])
-        response = response_list[0] if isinstance(response_list, list) else response_list
+        response_list = responses.get(tag, ["I'm sorry, I don't understand."])
+        response = response_list[0] if isinstance(response_list, list) else str(response_list)
 
         return jsonify({
             "response": response,
@@ -68,7 +73,7 @@ def chat():
         })
 
     except Exception as e:
-        return jsonify({"response": "Sorry, I encountered an error. Please try again later."})
+        return jsonify({"response": "Sorry, I had an error processing your request."})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
