@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS • Medical AI</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Inter:wght@300;400;500&display=swap');
+
+        :root {
+            --neon-cyan: #00f5ff;
+            --neon-pink: #ff00aa;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at center, #0a0e1a 0%, #000000 100%);
+            color: var(--neon-cyan);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 30px auto;
+            background: rgba(10, 15, 40, 0.85);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 24px;
+            box-shadow: 0 0 80px rgba(0, 245, 255, 0.4);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink));
+            padding: 30px;
+            text-align: center;
+            color: black;
+        }
+
+        .header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            letter-spacing: 6px;
+            text-shadow: 0 0 30px rgba(0,0,0,0.5);
+        }
+
+        .chat-box {
+            height: 580px;
+            padding: 25px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .message {
+            max-width: 75%;
+            padding: 16px 20px;
+            border-radius: 20px;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #00f5ff, #0099aa);
+            color: black;
+            border-bottom-right-radius: 6px;
+        }
+
+        .bot {
+            align-self: flex-start;
+            background: rgba(255, 0, 170, 0.15);
+            border: 1px solid var(--neon-pink);
+            border-bottom-left-radius: 6px;
+        }
+
+        .input-area {
+            padding: 25px;
+            background: rgba(10, 15, 40, 0.95);
+            border-top: 1px solid var(--neon-cyan);
+            display: flex;
+            gap: 15px;
+        }
+
+        input {
+            flex: 1;
+            padding: 18px 24px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 50px;
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        button {
+            padding: 0 40px;
+            background: linear-gradient(90deg, var(--neon-pink), var(--neon-cyan));
+            border: none;
+            border-radius: 50px;
+            color: black;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            transform: scale(1.08);
+            box-shadow: 0 0 30px var(--neon-pink);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>NEXUS</h1>
+            <p>NEURAL MEDICAL INTELLIGENCE v2.3</p>
+        </div>
+
+        <div class="chat-box" id="chatBox">
+            <div class="message bot">
+                Greetings, human.<br>
+                I am <strong>NEXUS</strong>, your personal medical AI.<br>
+                Describe your symptoms or ask me anything.
+            </div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Type your symptoms or medical question..." autocomplete="off">
+            <button onclick="sendMessage()">TRANSMIT</button>
+        </div>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById('chatBox');
+        const userInput = document.getElementById('userInput');
+
+        function addMessage(text, isUser) {
+            const div = document.createElement('div');
+            div.className = `message ${isUser ? 'user' : 'bot'}`;
+            div.innerHTML = text;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            addMessage(message, true);
+            userInput.value = "";
+
+            const loading = document.createElement('div');
+            loading.className = 'message bot';
+            loading.textContent = 'Analyzing neural pathways...';
+            chatBox.appendChild(loading);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                const res = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message })
+                });
+
+                const data = await res.json();
+                loading.remove();
+                addMessage(data.response || "I apologize. I couldn't process that.", false);
+            } catch (err) {
+                loading.remove();
+                addMessage("Connection lost. Please try again.", false);
+            }
+        }
+
+        userInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") sendMessage();
+        });
+    </script>
+</body>
+</html>
