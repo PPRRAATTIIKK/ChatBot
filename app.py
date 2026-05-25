@@ -22,6 +22,9 @@ try:
     base_dir = os.path.dirname(os.path.abspath(__file__))
     model_path = os.path.join(base_dir, 'app/model.h5')
     
+    print("Looking for model at:", model_path)
+    print("Model file exists:", os.path.exists(model_path))
+    
     model = load_model(model_path, compile=False)
     tokenizer = joblib.load(os.path.join(base_dir, 'app/tokenizer.joblib'))
     le = joblib.load(os.path.join(base_dir, 'app/label_encoder.joblib'))
@@ -32,7 +35,7 @@ try:
     print("✅ SUCCESS: Model loaded!")
 except Exception as e:
     load_error = str(e)
-    print("❌ FAILED:", load_error)
+    print("❌ FAILED to load model:", load_error)
 
 def clean_text(text):
     text = text.lower()
