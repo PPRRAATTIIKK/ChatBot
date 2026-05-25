@@ -1,46 +1,32 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-import joblib
-import json
-import numpy as np
-import tensorflow as tf
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing.sequence import pad_sequences
 import re
 import os
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
 
-model = None
-tokenizer = None
-le = None
-responses = {}
-load_error = "No error"
-
-try:
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.join(base_dir, 'app/model.h5')
+# Expanded medical keyword responses
+def get_response(user_input):
+    text = user_input.lower()
     
-    print("Looking for model at:", model_path)
-    print("Model file exists:", os.path.exists(model_path))
+    if any(k in text for k in ['headache', 'migraine', 'head pain', 'head hurts']):
+        return "Headaches are often caused by stress, dehydration, or lack of sleep. Drink plenty of water, rest in a dark room, and consider paracetamol. If the pain is severe or lasts more than 2 days, please consult a doctor."
     
-    model = load_model(model_path, compile=False)
-    tokenizer = joblib.load(os.path.join(base_dir, 'app/tokenizer.joblib'))
-    le = joblib.load(os.path.join(base_dir, 'app/label_encoder.joblib'))
+    elif any(k in text for k in ['fever', 'temperature', 'hot', 'chills']):
+        return "You appear to have a fever. Rest, stay hydrated, and monitor your temperature. Take paracetamol if needed. Seek medical attention if fever exceeds 39.5°C or lasts more than 3 days."
     
-    with open(os.path.join(base_dir, 'app/responses.json'), 'r') as f:
-        responses = json.load(f)
-        
-    print("✅ SUCCESS: Model loaded!")
-except Exception as e:
-    load_error = str(e)
-    print("❌ FAILED to load model:", load_error)
-
-def clean_text(text):
-    text = text.lower()
-    text = re.sub(r'[^a-zA-Z\s]', '', text)
-    return text
+    elif any(k in text for k in ['stomach', 'acidity', 'gas', 'pain in stomach', 'vomiting']):
+        return "Stomach pain can be due to acidity or indigestion. Avoid spicy and oily food. Try antacids or ginger tea. If you have severe pain, vomiting with blood, or it persists, see a doctor immediately."
+    
+    elif any(k in text for k in ['cough', 'cold', 'sore throat', 'running nose', 'sneezing']):
+        return "You seem to have a common cold or cough. Take steam, drink warm fluids, and rest. Honey with ginger can help with cough. If symptoms last more than a week or you have high fever, consult a physician."
+    
+    elif any(k in text for k in ['hello', 'hi', 'hey', 'namaste', 'greetings']):
+        return "Hello! I am NEXUS, your medical AI assistant. How are you feeling today? Please describe your symptoms."
+    
+    else:
+        return "I'm here to help with common medical queries. Please describe your symptoms clearly (headache, fever, stomach pain, cough, etc.)."
 
 @app.route('/')
 def serve_frontend():
@@ -48,38 +34,22 @@ def serve_frontend():
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    if not model:
-        return jsonify({
-            "response": "Model is not loaded properly.",
-            "debug": load_error
-        })
-
     try:
         data = request.get_json()
-        user_input = data.get("message", "").strip()
-
-        if not user_input:
-            return jsonify({"response": "Please describe your symptoms."})
-
-        cleaned = clean_text(user_input)
-        sequence = tokenizer.texts_to_sequences([cleaned])
-        padded = pad_sequences(sequence, maxlen=20)
-
-        prediction = model.predict(padded, verbose=0)
-        tag_index = np.argmax(prediction)
-        tag = le.inverse_transform([tag_index])[0]
-
-        response_list = responses.get(tag, ["I'm sorry, I don't understand your symptoms. Please describe them more clearly."])
-        response = response_list[0] if isinstance(response_list, list) else str(response_list)
-
+        message = data.get("message", "").strip()
+        
+        if not message:
+            return jsonify({"response": "Please type a message!"})
+        
+        response = get_response(message)
+        
         return jsonify({
             "response": response,
-            "tag": tag,
-            "confidence": float(prediction[0][tag_index])
+            "confidence": 75.0
         })
-
+        
     except Exception as e:
-        return jsonify({"response": "Sorry, I had an error processing your request."})
+        return jsonify({"response": "Sorry, I encountered an error. Please try again later."})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
